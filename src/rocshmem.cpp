@@ -179,6 +179,16 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   }
 }
 
+__host__ void rocshmem_hsaco_init(hipModule_t &module, void * ctx){
+  void *sym_addr;
+  size_t sym_size;
+
+  int64_t *h_rocshmem_ctx = reinterpret_cast<int64_t *>(ctx);
+
+  hipModuleGetGlobal(&sym_addr, &sym_size, module, "ROCSHMEM_CTX_DEFAULT");
+  hipMemcpy(sym_addr, &h_rocshmem_ctx, sizeof(void *), hipMemcpyHostToDevice);
+}
+
 [[maybe_unused]] __host__ int rocshmem_init_attr(unsigned int flags,
                                                  rocshmem_init_attr_t *attr) {
   MPI_Comm comm = MPI_COMM_NULL;

@@ -66,6 +66,17 @@ constexpr char VERSION[] = "3.0.0";
 __host__ void rocshmem_init(MPI_Comm comm = MPI_COMM_WORLD);
 
 /**
+ * @brief Initialize the rocSHMEM device internal CTX -  ROCSHMEM_CTX_DEFAULT
+ *        explicitly when module is loaded dynamically via hsaco kernel module
+ *        and it needs to use previously allocated/initialized ctx.
+ *
+ * @param[in] module    hsaco module
+ * 
+ * @param[in] ctx       previously initialized ctx via static lib initialization.
+ */
+__host__ void rocshmem_hsaco_init(hipModule_t &module, void *ctx);
+
+/**
  * @brief Initialize the rocSHMEM runtime and underlying transport layer
  *        with an attempt to enable the requested thread support.
  *
