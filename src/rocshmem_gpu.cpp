@@ -54,6 +54,7 @@
 #ifdef USE_RO
 #include "reverse_offload/context_ro_tmpl_device.hpp"
 #else
+#include "ipc/backend_ipc.hpp"
 #include "ipc/context_ipc_tmpl_device.hpp"
 #endif
 
@@ -63,9 +64,11 @@
 
 namespace rocshmem {
 
-__device__ __constant__ rocshmem_ctx_t ROCSHMEM_CTX_DEFAULT{};
+  __device__  rocshmem_ctx_t __attribute__((visibility("default"))) ROCSHMEM_CTX_DEFAULT{};
 
 __constant__ Backend *device_backend_proxy;
+
+ __constant__ IPCBackend *device_IPC_backend_proxy;
 
 __device__ void rocshmem_wg_init() {
   int provided;
@@ -294,8 +297,23 @@ __host__ void set_internal_ctx(rocshmem_ctx_t *ctx) {
                               hipMemcpyHostToDevice));
 }
 
-__device__ Context *get_internal_ctx(rocshmem_ctx_t ctx) {
-  return reinterpret_cast<Context *>(ctx.ctx_opaque);
+// __host__ void* get_host_ctx_ipc_base(rocshmem_ctx_t ctx, int pe){
+//   IPCContext *IpcCtx = reinterpret_cast<IPCContext *>(ctx.ctx_opaque)
+
+// }
+
+
+__device__ IPCContext *get_internal_ctx(rocshmem_ctx_t ctx) {
+  return reinterpret_cast<IPCContext *>(ctx.ctx_opaque);
+}
+
+
+__device__ void* get_device_ctx_ipc_base(int pe){
+  void * ptrIpcBase = get_internal_ctx(ROCSHMEM_CTX_DEFAULT)->get_device_ipc_base(pe);
+
+  // printf("\n device get_device_ctx_ipc_base: %p\n", ptrIpcBase);
+
+  return ptrIpcBase;
 }
 
 __device__ int rocshmem_wg_ctx_create(long options, rocshmem_ctx_t *ctx) {
@@ -303,9 +321,9 @@ __device__ int rocshmem_wg_ctx_create(long options, rocshmem_ctx_t *ctx) {
   bool result{true};
   if (get_flat_block_id() == 0) {
     ctx->team_opaque = reinterpret_cast<TeamInfo *>(ROCSHMEM_CTX_DEFAULT.team_opaque);
-    result = device_backend_proxy->create_ctx(options, ctx);
+    result = device_IPC_backend_proxy->create_ctx(options, ctx);
     if(result) {
-      reinterpret_cast<Context *>(ctx->ctx_opaque)->setFence(options);
+      reinterpret_cast<IPCContext *>(ctx->ctx_opaque)->setFence(options);
     }
   }
   __syncthreads();
@@ -325,9 +343,9 @@ __device__ int rocshmem_wg_team_create_ctx(rocshmem_team_t team, long options,
     Team *team_obj{get_internal_team(team)};
     TeamInfo *info_wrt_world = team_obj->tinfo_wrt_world;
     ctx->team_opaque = info_wrt_world;
-    result = device_backend_proxy->create_ctx(options, ctx);
+    result = device_IPC_backend_proxy->create_ctx(options, ctx);
     if(result) {
-      reinterpret_cast<Context *>(ctx->ctx_opaque)->setFence(options);
+      reinterpret_cast<IPCContext *>(ctx->ctx_opaque)->setFence(options);
     }
   }
   __syncthreads();
@@ -341,7 +359,7 @@ __device__ void rocshmem_wg_ctx_destroy(
     ctx->ctx_opaque);
 
   if (get_flat_block_id() == 0) {
-    device_backend_proxy->destroy_ctx(ctx);
+    device_IPC_backend_proxy->destroy_ctx(ctx);
   }
 }
 
@@ -524,7 +542,7 @@ __device__ void rocshmem_wait_until(T *ivars, int cmp, T val) {
   GPU_DPRINTF("Function: rocshmem_wait_until (ivars=%p, cmp=%d, val=%g)\n",
     ivars, cmp, (double)val);
 
-  Context *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
+  IPCContext *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
   ctx_internal->ctxStats.incStat(NUM_WAIT_UNTIL);
   ctx_internal->wait_until(ivars, cmp, val);
 }
@@ -535,7 +553,7 @@ __device__ void rocshmem_wait_until_all(T *ivars, size_t nelems, const int* stat
   GPU_DPRINTF("Function: rocshmem_wait_until_all (ivars=%p, nelems=%zd cmp=%d, val=%g)\n",
     ivars, nelems, cmp, (double)val);
 
-  Context *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
+  IPCContext *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
   ctx_internal->ctxStats.incStat(NUM_WAIT_UNTIL_ALL);
   ctx_internal->wait_until_all(ivars, nelems, status, cmp, val);
 }
@@ -546,7 +564,7 @@ __device__ size_t rocshmem_wait_until_any(T *ivars, size_t nelems, const int* st
   GPU_DPRINTF("Function: rocshmem_wait_until_any (ivars=%p, nelems=%zd cmp=%d, val=%g)\n",
     ivars, nelems, cmp, (double)val);
 
-  Context *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
+  IPCContext *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
   ctx_internal->ctxStats.incStat(NUM_WAIT_UNTIL_ANY);
   return ctx_internal->wait_until_any(ivars, nelems, status, cmp, val);
 }
@@ -558,7 +576,7 @@ __device__ size_t rocshmem_wait_until_some(T *ivars, size_t nelems, size_t* indi
   DPRINTF("Function: rocshmem_wait_until_some (ivars=%p, nelems=%zd cmp=%d, val=%g)\n",
     ivars, nelems, cmp, (double)val);
 
-  Context *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
+  IPCContext *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
   ctx_internal->ctxStats.incStat(NUM_WAIT_UNTIL_SOME);
   return ctx_internal->wait_until_some(ivars, nelems, indices, status, cmp, val);
 }
@@ -569,7 +587,7 @@ __device__ size_t rocshmem_wait_until_any_vector(T *ivars, size_t nelems, const 
   DPRINTF("Function: rocshmem_wait_until_any_vector (ivars=%p, nelems=%zd cmp=%d, vals=%p)\n",
     ivars, nelems, cmp, vals);
 
-  Context *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
+  IPCContext *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
   ctx_internal->ctxStats.incStat(NUM_WAIT_UNTIL_ANY_VECTOR);
   return ctx_internal->wait_until_any_vector(ivars, nelems, status, cmp, vals);
 }
@@ -580,7 +598,7 @@ __device__ void rocshmem_wait_until_all_vector(T *ivars, size_t nelems, const in
   DPRINTF("Function: rocshmem_wait_until_all_vector (ivars=%p, nelems=%zd cmp=%d, vals=%p)\n",
     ivars, nelems, cmp, vals);
 
-  Context *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
+  IPCContext *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
   ctx_internal->ctxStats.incStat(NUM_WAIT_UNTIL_ALL_VECTOR);
   ctx_internal->wait_until_all_vector(ivars, nelems, status, cmp, vals);
 }
@@ -593,7 +611,7 @@ __device__ size_t rocshmem_wait_until_some_vector(T *ivars, size_t nelems,
   DPRINTF("Function: rocshmem_wait_until_some_vector (ivars=%p, nelems=%zd cmp=%d, vals=%p)\n",
     ivars, nelems, cmp, vals);
 
-  Context *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
+  IPCContext *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
   ctx_internal->ctxStats.incStat(NUM_WAIT_UNTIL_SOME_VECTOR);
   return ctx_internal->wait_until_some_vector(ivars, nelems, indices, status, cmp, vals);
 }
@@ -603,7 +621,7 @@ __device__ int rocshmem_test(T *ivars, int cmp, T val) {
   GPU_DPRINTF("Function: rocshmem_test (ivars=%p, cmp=%d, val=%g)\n",
     ivars, cmp, (double)val);
 
-  Context *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
+  IPCContext *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
   ctx_internal->ctxStats.incStat(NUM_TEST);
 
   return ctx_internal->test(ivars, cmp, val);

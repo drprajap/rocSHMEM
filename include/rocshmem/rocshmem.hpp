@@ -522,6 +522,7 @@ __device__ ATTR_NO_INLINE void rocshmem_ctx_threadfence_system(
 
 __device__ ATTR_NO_INLINE void rocshmem_threadfence_system();
 
+__device__ ATTR_NO_INLINE void* get_device_ctx_ipc_base(int pe);
 }  // namespace rocshmem
 
 #endif  // LIBRARY_INCLUDE_ROCSHMEM_HPP

@@ -43,6 +43,7 @@ __host__ IPCContext::IPCContext(Backend *b, unsigned int ctx_id)
   IPCBackend *backend{static_cast<IPCBackend *>(b)};
   ipcImpl_.ipc_bases = b->ipcImpl.ipc_bases;
   ipcImpl_.shm_size = b->ipcImpl.shm_size;
+  ipcImpl_.pes_with_ipc_avail = b->ipcImpl.pes_with_ipc_avail;
 
   barrier_sync = backend->barrier_sync;
   fence_pool = backend->fence_pool;
@@ -51,6 +52,15 @@ __host__ IPCContext::IPCContext(Backend *b, unsigned int ctx_id)
 
   orders_.store = detail::atomic::rocshmem_memory_order::memory_order_seq_cst;
 }
+
+__host__ void * IPCContext::get_ipc_base(int pe){
+  return ipcImpl_.ipc_bases[pe];
+}
+
+__device__ void * IPCContext::get_device_ipc_base(int pe){
+  return ipcImpl_.ipc_bases[pe];
+}
+
 
 __device__ void IPCContext::threadfence_system() {
   __threadfence_system();
