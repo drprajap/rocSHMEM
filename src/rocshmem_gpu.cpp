@@ -297,6 +297,10 @@ __host__ void set_internal_ctx(rocshmem_ctx_t *ctx) {
                               hipMemcpyHostToDevice));
 }
 
+__device__ IPCContext *get_internal_ctx(rocshmem_ctx_t ctx) {
+  return reinterpret_cast<IPCContext *>(ctx.ctx_opaque);
+}
+
 __device__ int rocshmem_wg_ctx_create(long options, rocshmem_ctx_t *ctx) {
   GPU_DPRINTF("Function: rocshmem_wg_ctx_create (options=%ld)\n", options);
   bool result{true};
