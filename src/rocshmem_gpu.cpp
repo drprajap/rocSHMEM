@@ -64,7 +64,7 @@
 
 namespace rocshmem {
 
-  __device__  rocshmem_ctx_t __attribute__((visibility("default"))) ROCSHMEM_CTX_DEFAULT{};
+__device__  rocshmem_ctx_t __attribute__((visibility("default"))) ROCSHMEM_CTX_DEFAULT{};
 
 __constant__ Backend *device_backend_proxy;
 
@@ -295,25 +295,6 @@ __host__ void set_internal_ctx(rocshmem_ctx_t *ctx) {
   CHECK_HIP(hipMemcpyToSymbol(HIP_SYMBOL(ROCSHMEM_CTX_DEFAULT), ctx,
                               sizeof(rocshmem_ctx_t), 0,
                               hipMemcpyHostToDevice));
-}
-
-// __host__ void* get_host_ctx_ipc_base(rocshmem_ctx_t ctx, int pe){
-//   IPCContext *IpcCtx = reinterpret_cast<IPCContext *>(ctx.ctx_opaque)
-
-// }
-
-
-__device__ IPCContext *get_internal_ctx(rocshmem_ctx_t ctx) {
-  return reinterpret_cast<IPCContext *>(ctx.ctx_opaque);
-}
-
-
-__device__ void* get_device_ctx_ipc_base(int pe){
-  void * ptrIpcBase = get_internal_ctx(ROCSHMEM_CTX_DEFAULT)->get_device_ipc_base(pe);
-
-  // printf("\n device get_device_ctx_ipc_base: %p\n", ptrIpcBase);
-
-  return ptrIpcBase;
 }
 
 __device__ int rocshmem_wg_ctx_create(long options, rocshmem_ctx_t *ctx) {

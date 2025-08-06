@@ -35,10 +35,6 @@ class IPCContext : public Context {
  public:
   __host__ IPCContext(Backend *b, unsigned int ctx_id);
 
-  __host__ void * get_ipc_base(int pe);
-
-  __device__ void * get_device_ipc_base(int pe);
-
   __device__ IPCContext(Backend *b, unsigned int ctx_id);
 
   __device__ void threadfence_system();
