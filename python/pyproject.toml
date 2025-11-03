@@ -1,0 +1,52 @@
+[build-system]
+requires = [
+    "setuptools>=45",
+    "wheel",
+    "cmake>=3.16",
+    "pybind11>=2.6.0",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rocshmem4py"
+version = "0.1.0"
+description = "Python bindings for ROCm Shared Memory (ROCSHMEM) library"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "MIT"}
+authors = [
+    {name = "Advanced Micro Devices, Inc."}
+]
+keywords = ["rocm", "hip", "rocshmem", "pgas", "hpc", "parallel", "distributed"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: C++",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: System :: Distributed Computing",
+]
+
+[project.urls]
+Homepage = "https://github.com/ROCm/rocSHMEM"
+Documentation = "https://github.com/ROCm/rocSHMEM"
+Repository = "https://github.com/ROCm/rocSHMEM"
+"Bug Tracker" = "https://github.com/ROCm/rocSHMEM/issues"
+
+[project.optional-dependencies]
+test = ["pytest>=6.0", "numpy>=1.19", "mpi4py>=3.0"]
+mpi = ["mpi4py>=3.0"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
