@@ -77,14 +77,20 @@ constexpr char VERSION[] = "3.2.1";
  */
 __host__ void rocshmem_init(void);
 
+
 /**
- * @brief Query rocSHMEM context from host API
+ * @brief Query rocSHMEM context from host API (DEPRECATED)
+ *
+ * @deprecated This API is deprecated. Use rocshmem_hipmodule_init() instead,
+ *             which provides better CUDA graph compatibility and automatic
+ *             module initialization.
  *
  * @param[out] ctx      Returns ROCSHMEM_CTX_DEFAULT device pointer that users
  *                      can query from one instance of rocshmem host library and
- *                      use use later for dynamic module initialization in
+ *                      use later for dynamic module initialization in
  *                      kernel bitcode device library in the same application
  */
+[[deprecated("Use rocshmem_hipmodule_init() instead")]]
 __host__ void * rocshmem_get_device_ctx();
 
 /**
@@ -95,14 +101,14 @@ __host__ void * rocshmem_get_device_ctx();
  * memory operations. This is required for CUDA graph compatibility.
  *
  * @param[in] module    HIP module containing rocSHMEM device code
- * @param[in] stream    HIP stream to use for context initialization (optional, 
- *                      uses current stream if NULL)
+ * @param[in] stream    HIP stream to use for context initialization (optional,
+ *                      uses hipStreamPerThread if nullptr)
  *
  * @return int          0 on success, non-zero on failure
  *
- * @note This API is an alternative to manually calling rocshmem_get_device_ctx()
- *       and rocshmem_set_ctx() in each kernel. It's compatible with torch.cuda.graph()
- *       because it uses hipMemcpyAsync instead of hipMemcpyFromSymbol.
+ * @note This function does not synchronize the stream, allowing it to be
+ *       used in CUDA graph capture contexts. The caller is responsible for
+ *       synchronization if needed.
  */
 __host__ int rocshmem_hipmodule_init(hipModule_t module, hipStream_t stream = nullptr);
 
